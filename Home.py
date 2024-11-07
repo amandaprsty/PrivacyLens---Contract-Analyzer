@@ -39,6 +39,9 @@ if 'embed_model' not in st.session_state:
 if 'prompt_helper' not in st.session_state:
     st.session_state.prompt_helper = None
 
+# Load environment variables
+load_dotenv()
+
 # Define Australian Privacy Principles structure
 APPS = {
     "APP1": {
