@@ -13,7 +13,7 @@ develop-eggs/
 dist/
 downloads/
 eggs/
-.env
+.env.example
 .eggs/
 lib/
 lib64/
