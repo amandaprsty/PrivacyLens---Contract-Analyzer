@@ -228,7 +228,7 @@ def generate_pdf_report(results):
         fontSize=24,
         spaceAfter=30
     )
-    story.append(Paragraph("Privacy Policy Compliance Report", title_style))
+    story.append(Paragraph("Privacy Document Compliance Report", title_style))
     story.append(Spacer(1, 12))
     
     # Summary section
@@ -306,7 +306,7 @@ def initialize_vector_store():
         try:
             chroma_collection = chroma_client.get_or_create_collection(
                 name="privacy_docs",
-                metadata={"description": "Privacy policy documents collection"}
+                metadata={"description": "Privacy documents collection"}
             )
         except Exception as e:
             # If there's an error with existing collection, recreate it
@@ -316,7 +316,7 @@ def initialize_vector_store():
                 pass
             chroma_collection = chroma_client.create_collection(
                 name="privacy_docs",
-                metadata={"description": "Privacy policy documents collection"}
+                metadata={"description": "Privacy documents collection"}
             )
             
         return chroma_collection
@@ -343,7 +343,6 @@ def setup_llama_components(api_key):
     )
     return llm, embed_model, prompt_helper
 
-# Improve the analyze_app_compliance function with better error handling
 def analyze_app_compliance(query_engine, app_number, requirements):
     """
     Analyze compliance for a specific APP and its requirements with improved error handling
@@ -355,7 +354,7 @@ def analyze_app_compliance(query_engine, app_number, requirements):
         try:
             # Create analysis prompt with more specific guidance
             prompt = f"""
-            Analyze the provided privacy policy document for compliance with Australian Privacy Principle (APP) {app_number}: {app_title}
+            Analyze the provided privacy document for compliance with Australian Privacy Principle (APP) {app_number}: {app_title}
             Specifically evaluate the requirement: {requirement}
             
             Focus on these aspects:
@@ -406,11 +405,11 @@ def analyze_app_compliance(query_engine, app_number, requirements):
     
     return results
 
-
-def extract_policy_sections(query_engine):
-    """Initial AI call to extract and categorize policy sections"""
+#First call extracts and categorizes contract sections
+def extract_document_sections(query_engine):
+    """Initial AI call to extract and categorize contract sections"""
     prompt = """
-    Analyze the privacy policy document and extract key sections related to:
+    Analyze the privacy contract document and extract key sections related to:
     1. Data collection practices
     2. Data usage and disclosure
     3. Security measures
@@ -478,16 +477,16 @@ def calculate_app_score(results):
     
     return compliance_score * confidence_factor
 
-
+#Second call performs keyword-specific analysis
 def analyze_targeted_compliance(query_engine, app_number, keywords):
     """Additional AI call for keyword-specific compliance analysis"""
     prompt = f"""
-    Analyze the privacy policy specifically for compliance with APP {app_number}
+    Analyze the privacy contract specifically for compliance with APP {app_number}
     focusing on these keywords/concerns: {keywords}
     
     Consider:
     1. How these specific areas are addressed
-    2. Whether the policy adequately covers these concerns
+    2. Whether the contract adequately covers these concerns
     3. Any gaps or ambiguities related to these specific items
     
     Return the analysis in JSON format with detailed findings and recommendations.
@@ -495,8 +494,9 @@ def analyze_targeted_compliance(query_engine, app_number, keywords):
     response = query_engine.query(prompt)
     return parse_analysis_response(response.response)
 
+#Third call generates improvements for each APP
 def generate_improvement_suggestions(query_engine, results):
-    """Final AI call to generate specific improvement suggestions"""
+    """AI call to generate specific improvement suggestions"""
     non_compliant_areas = []
     for app, data in results.items():
         if data['compliance_score'] < 75:
@@ -507,9 +507,9 @@ def generate_improvement_suggestions(query_engine, results):
         Based on the compliance gaps identified in:
         {', '.join(non_compliant_areas)}
         
-        Provide specific, actionable recommendations to improve the privacy policy.
+        Provide specific, actionable recommendations to improve the contract.
         Include:
-        1. Suggested policy additions or modifications
+        1. Suggested contract additions or modifications
         2. Example clauses or language to consider
         3. Implementation priorities based on risk level
         
@@ -519,6 +519,7 @@ def generate_improvement_suggestions(query_engine, results):
         return parse_analysis_response(response.response)
     return {}
 
+#Fourth call generates visualization data
 def create_enhanced_visualization(results):
     """Create an enhanced visualization dashboard"""
     # Create main compliance score chart
@@ -635,8 +636,8 @@ def process_document(uploaded_file, temp_file_path):
         return None
 
 def main():
-    st.set_page_config(page_title="PrivacyLens: APP Compliance Analyzer", layout="wide")
-    st.title("PrivacyLens: Australian Privacy Principles Compliance Analyzer")
+    st.set_page_config(page_title="PrivacyLens: APPs Compliance Contract Analyzer", layout="wide")
+    st.title("PrivacyLens: APPs Compliance Contract Analyzer")
 
     # Enhanced sidebar configuration
     with st.sidebar:
@@ -669,7 +670,7 @@ def main():
             llm, embed_model, prompt_helper = setup_llama_components(st.session_state.openai_api_key)
             
             # File upload section
-            uploaded_file = st.file_uploader("Upload Privacy Policy Document", type=["txt", "pdf"])
+            uploaded_file = st.file_uploader("Upload Privacy Document", type=["txt", "pdf"])
             
             if uploaded_file:
                 with st.spinner("Processing document..."):
@@ -681,9 +682,9 @@ def main():
                     if query_engine:
                         st.success("Document processed successfully!")
                         
-                        # Initial policy section extraction
-                        with st.spinner("Extracting policy sections..."):
-                            policy_sections = extract_policy_sections(query_engine)
+                        # Initial document section extraction
+                        with st.spinner("Extracting document sections..."):
+                            document_sections = extract_document_sections(query_engine)
                             st.session_state.query_engine = query_engine
                     
                     try:
@@ -786,6 +787,7 @@ def main():
     except Exception as e:
         st.error(f"An error occurred: {str(e)}")
 
+#Fifth call calculates compliance scores
 def calculate_app_score(results):
     """Calculate overall compliance score for an APP"""
     if not results:
@@ -900,385 +902,3 @@ def generate_report(results):
 
 if __name__ == "__main__":
     main()
-
-# Add new function for PDF report generation
-def generate_pdf_report(results):
-    """Generate a PDF compliance report"""
-    from reportlab.lib import colors
-    from reportlab.lib.pagesizes import letter
-    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
-    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-    from reportlab.lib.units import inch
-    import io
-    
-    # Create buffer for PDF
-    buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=letter)
-    styles = getSampleStyleSheet()
-    story = []
-    
-    # Title
-    title_style = ParagraphStyle(
-        'CustomTitle',
-        parent=styles['Heading1'],
-        fontSize=24,
-        spaceAfter=30
-    )
-    story.append(Paragraph("Privacy Policy Compliance Report", title_style))
-    story.append(Spacer(1, 12))
-    
-    # Summary section
-    story.append(Paragraph("Executive Summary", styles['Heading2']))
-    
-    # Calculate overall compliance
-    overall_score = sum(app_data['compliance_score'] for app_data in results.values()) / len(results)
-    summary_data = [
-        ["Overall Compliance Score", f"{overall_score:.1f}%"],
-        ["Assessment Date", datetime.now().strftime("%Y-%m-%d")],
-    ]
-    
-    summary_table = Table(summary_data)
-    summary_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 14),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-        ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
-        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-        ('FONTSIZE', (0, 1), (-1, -1), 12),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black)
-    ]))
-    story.append(summary_table)
-    story.append(Spacer(1, 20))
-    
-    # Detailed analysis for each APP
-    story.append(Paragraph("Detailed Analysis", styles['Heading2']))
-    
-    for app, data in results.items():
-        # APP header
-        story.append(Paragraph(f"{app}: {data['title']}", styles['Heading3']))
-        story.append(Paragraph(f"Compliance Score: {data['compliance_score']:.1f}%", styles['Normal']))
-        story.append(Spacer(1, 12))
-        
-        # Requirements analysis
-        for req, results in data['detailed_results'].items():
-            status = "✓" if results['compliance_status'] else "✗"
-            story.append(Paragraph(f"{status} {req}", styles['Normal']))
-            story.append(Paragraph(f"Evidence: {results['evidence']}", styles['Normal']))
-            
-            if results['recommendations']:
-                story.append(Paragraph("Recommendations:", styles['Normal']))
-                for rec in results['recommendations']:
-                    story.append(Paragraph(f"• {rec}", styles['Normal']))
-            
-            story.append(Spacer(1, 12))
-        
-        story.append(Spacer(1, 20))
-    
-    # Build PDF
-    doc.build(story)
-    buffer.seek(0)
-    return buffer
-
-# Update the main function to include PDF report generation
-def main():
-    # ... [previous code remains the same until the report generation section]
-    
-    # Modify the report generation section
-    if st.session_state.analysis_complete and st.session_state.compliance_results:
-        st.markdown("## Download Reports")
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            if st.button("Download PDF Report"):
-                pdf_buffer = generate_pdf_report(st.session_state.compliance_results)
-                st.download_button(
-                    label="Download PDF",
-                    data=pdf_buffer,
-                    file_name="privacy_compliance_report.pdf",
-                    mime="application/pdf"
-                )
-        
-        with col2:
-            if st.button("Download JSON Report"):
-                report = generate_report(st.session_state.compliance_results)
-                st.download_button(
-                    label="Download JSON",
-                    data=json.dumps(report, indent=2),
-                    file_name="privacy_compliance_report.json",
-                    mime="application/json"
-                )
-
-def setup_openai(api_key):
-    """Setup OpenAI client with provided API key"""
-    if not api_key:
-        raise ValueError("OpenAI API key is required")
-    return OpenAIClient(api_key=api_key)
-
-def initialize_vector_store():
-    """Initialize ChromaDB and create collection if it doesn't exist"""
-    try:
-        # Ensure the directory exists
-        os.makedirs("./chroma_db", exist_ok=True)
-        
-        # Initialize the persistent client
-        chroma_client = chromadb.PersistentClient(path="./chroma_db")
-        
-        # Create or get collection
-        try:
-            chroma_collection = chroma_client.get_or_create_collection(
-                name="privacy_docs",
-                metadata={"description": "Privacy policy documents collection"}
-            )
-        except Exception as e:
-            # If there's an error with existing collection, recreate it
-            try:
-                chroma_client.delete_collection("privacy_docs")
-            except:
-                pass
-            chroma_collection = chroma_client.create_collection(
-                name="privacy_docs",
-                metadata={"description": "Privacy policy documents collection"}
-            )
-            
-        return chroma_collection
-    
-    except Exception as e:
-        st.error(f"Error initializing vector store: {str(e)}")
-        raise
-
-# Modify the setup_llama_components function
-def setup_llama_components(api_key):
-    """Setup LlamaIndex components with provided API key"""
-    if not api_key:
-        raise ValueError("OpenAI API key is required")
-    
-    os.environ["OPENAI_API_KEY"] = api_key
-    # Change to gpt-3.5-turbo instead of gpt-4
-    llm = OpenAI(model="gpt-3.5-turbo", temperature=0.1)
-    embed_model = OpenAIEmbedding()
-    prompt_helper = PromptHelper(
-        context_window=4096,
-        num_output=512,
-        chunk_overlap_ratio=0.1,
-        chunk_size_limit=None
-    )
-    return llm, embed_model, prompt_helper
-
-# Improve the analyze_app_compliance function with better error handling
-def analyze_app_compliance(query_engine, app_number, requirements):
-    """
-    Analyze compliance for a specific APP and its requirements with improved error handling
-    """
-    results = {}
-    app_title = APPS[f"APP{app_number}"]["title"]
-    
-    for requirement in requirements:
-        try:
-            # Create analysis prompt with more specific guidance
-            prompt = f"""
-            Analyze the provided privacy policy document for compliance with Australian Privacy Principle (APP) {app_number}: {app_title}
-            Specifically evaluate the requirement: {requirement}
-            
-            Focus on these aspects:
-            1. Does the document explicitly address this requirement?
-            2. Are there specific procedures or practices described?
-            3. Is the implementation clear and adequate?
-            
-            Provide your analysis in this exact JSON format:
-            {{
-                "compliance_status": true/false,
-                "evidence": "Quote specific relevant sections from the document. If none found, state 'No relevant sections found.'",
-                "recommendations": ["List specific, actionable recommendations"],
-                "confidence_score": "A number between 0-100"
-            }}
-            
-            Base your assessment strictly on the document content.
-            """
-            
-            # Query the document with timeout and retry logic
-            max_retries = 3
-            for attempt in range(max_retries):
-                try:
-                    response = query_engine.query(prompt)
-                    requirement_result = parse_analysis_response(response.response)
-                    break
-                except Exception as e:
-                    if attempt == max_retries - 1:
-                        requirement_result = {
-                            "compliance_status": False,
-                            "evidence": f"Analysis incomplete: {str(e)}",
-                            "recommendations": ["Manual review required - automated analysis failed"],
-                            "confidence_score": 0
-                        }
-                    continue
-            
-            results[requirement] = requirement_result
-            
-        except Exception as e:
-            results[requirement] = {
-                "compliance_status": False,
-                "evidence": f"Analysis error: {str(e)}",
-                "recommendations": ["Manual review required - system error occurred"],
-                "confidence_score": 0
-            }
-            
-        # Add small delay between requests to avoid rate limiting
-        time.sleep(1)
-    
-    return results
-
-# Improve the parse_analysis_response function
-def parse_analysis_response(response_text):
-    """Parse and validate the analysis response with better error handling"""
-    try:
-        # Clean the response text if needed
-        if isinstance(response_text, str):
-            # Remove any leading/trailing whitespace or special characters
-            cleaned_text = response_text.strip()
-            # Try to find JSON content if wrapped in other text
-            start_idx = cleaned_text.find('{')
-            end_idx = cleaned_text.rfind('}')
-            if start_idx != -1 and end_idx != -1:
-                cleaned_text = cleaned_text[start_idx:end_idx + 1]
-            result = json.loads(cleaned_text)
-        else:
-            result = response_text
-        
-        # Validate and normalize the response
-        return {
-            "compliance_status": bool(result.get('compliance_status', False)),
-            "evidence": str(result.get('evidence', "No evidence provided")),
-            "recommendations": list(result.get('recommendations', ["No specific recommendations provided"])),
-            "confidence_score": int(float(result.get('confidence_score', 0)))
-        }
-    except json.JSONDecodeError:
-        # Handle case where response isn't valid JSON
-        return {
-            "compliance_status": False,
-            "evidence": "Error: Could not parse analysis response",
-            "recommendations": ["Manual review required - response format error"],
-            "confidence_score": 0
-        }
-    except Exception as e:
-        return {
-            "compliance_status": False,
-            "evidence": f"Error parsing analysis: {str(e)}",
-            "recommendations": ["Manual review required - parsing error"],
-            "confidence_score": 0
-        }
-
-# Add a new function to validate document content
-def validate_document_content(documents):
-    """Validate that the document contains analyzable content"""
-    if not documents:
-        raise ValueError("No content found in the document")
-    
-    total_content = " ".join(doc.text for doc in documents)
-    if len(total_content.strip()) < 50:  # Arbitrary minimum length
-        raise ValueError("Document contains insufficient content for analysis")
-    
-    return True
-
-# Update the main function's document processing section
-def process_document(uploaded_file, temp_file_path):
-    """Process the uploaded document with validation"""
-    try:
-        # Initialize vector store
-        chroma_collection = initialize_vector_store()
-        vector_store = ChromaVectorStore(chroma_collection=chroma_collection)
-        storage_context = StorageContext.from_defaults(vector_store=vector_store)
-
-        # Load document based on type
-        if uploaded_file.type == "application/pdf":
-            PDFReader = download_loader("PDFReader")
-            loader = PDFReader()
-            documents = loader.load_data(file=temp_file_path)
-        else:
-            documents = SimpleDirectoryReader(input_files=[temp_file_path]).load_data()
-
-        # Validate document content
-        if validate_document_content(documents):
-            index = VectorStoreIndex.from_documents(
-                documents,
-                storage_context=storage_context,
-                embed_model=st.session_state.embed_model,  # Use session state
-                prompt_helper=st.session_state.prompt_helper  # Use session state
-            )
-            return index.as_query_engine(llm=st.session_state.llm)  # Use session state
-        
-    except Exception as e:
-        st.error(f"Error processing document: {str(e)}")
-        return None
-
-def calculate_app_score(results):
-    """Calculate overall compliance score for an APP"""
-    if not results:
-        return 0
-    
-    total_requirements = len(results)
-    compliant_requirements = sum(1 for r in results.values() if r['compliance_status'])
-    confidence_sum = sum(r.get('confidence_score', 0) for r in results.values())
-    
-    # Weight the score by both compliance and confidence
-    compliance_score = (compliant_requirements / total_requirements) * 100
-    confidence_factor = (confidence_sum / (total_requirements * 100))
-    
-    return compliance_score * confidence_factor
-
-def create_compliance_visualization(results):
-    """Create a Plotly visualization of compliance results"""
-    apps = list(results.keys())
-    compliance_scores = []
-    confidence_scores = []
-    
-    for app in apps:
-        app_results = results[app]['detailed_results']
-        compliance_scores.append(calculate_app_score(app_results))
-        confidence_scores.append(
-            sum(r.get('confidence_score', 0) for r in app_results.values()) / len(app_results)
-        )
-    
-    # Create compliance score bar chart
-    fig = go.Figure(data=[
-        go.Bar(
-            name='Compliance Score',
-            x=apps,
-            y=compliance_scores,
-            marker_color=['green' if score >= 75 else 'yellow' if score >= 50 else 'red' 
-                         for score in compliance_scores]
-        ),
-        go.Scatter(
-            name='Confidence Level',
-            x=apps,
-            y=confidence_scores,
-            mode='lines+markers',
-            line=dict(color='blue'),
-            yaxis='y2'
-        )
-    ])
-    
-    # Update layout for dual axis
-    fig.update_layout(
-        title="Privacy Principles Compliance Overview",
-        xaxis_title="Australian Privacy Principles",
-        yaxis_title="Compliance Score (%)",
-        yaxis2=dict(
-            title="Confidence Score (%)",
-            overlaying='y',
-            side='right'
-        ),
-        yaxis=dict(range=[0, 100]),
-        yaxis2_range=[0, 100],
-        barmode='group',
-        legend=dict(
-            x=1.1,
-            y=1,
-            xanchor='left'
-        )
-    )
-    
-    return fig 
