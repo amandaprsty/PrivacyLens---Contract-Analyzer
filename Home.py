@@ -904,5 +904,5 @@ if __name__ == "__main__":
     main()
 
 # UI IMPROVEMENT: Footer
-st.markdown("---")
+st.markdown("-----------------")
 st.markdown("© 2024 AP Company. All rights reserved.")
