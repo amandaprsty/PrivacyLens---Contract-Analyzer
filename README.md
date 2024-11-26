@@ -42,6 +42,4 @@ This test case demonstrates the core functionality of the PrivacyLens Contract A
 
 Feel free to explore the tool further by testing additional privacy policy documents to ensure its robustness and accuracy.  
 
----  
-
-This enhanced version is polished and structured to serve as a clear and professional README entry for your GitHub repository.
+---
