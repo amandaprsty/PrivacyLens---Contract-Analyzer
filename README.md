@@ -1,6 +1,6 @@
 # PrivacyLens: Contract Analyzer  
 
-**Deployed Application URL**: [PrivacyLens: Contract Analyzer]((https://finalassignmentv3-lqzyg3vyuda7pebhcoqpgc.streamlit.app/))  
+**Deployed Application URL**: https://finalassignmentv3-lqzyg3vyuda7pebhcoqpgc.streamlit.app/
 
 **Note**: To enable all features, please provide your own API credentials in the sidebar.  
 
